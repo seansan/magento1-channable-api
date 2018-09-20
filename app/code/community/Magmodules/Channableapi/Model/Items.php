@@ -398,47 +398,23 @@ class Magmodules_Channableapi_Model_Items extends Mage_Core_Model_Abstract
                 $key = array_search($item['id'], array_column($postData, 'product_id'));
                 $postData[$key]['call_result'] = $item['message'];
                 $postData[$key]['status'] = ucfirst($item['status']);
-                $postData[$key]['needs_update'] = ($item['status'] == 'success') ? 0 : 1;
+                $postData[$key]['needs_update'] = 0;
                 $postData[$key]['last_call'] = Mage::getModel('core/date')->gmtDate('Y-m-d H:i:s');
                 $postData[$key]['updated_at'] = Mage::getModel('core/date')->gmtDate('Y-m-d H:i:s');
-                $postData[$key]['attempts'] = 1;
-                if ($postData[$key]['needs_update']) {
-                    $oldItem = $this->load($postData[$key]['item_id']);
-                    if ($oldItem->getStatus() == 'Error') {
-                        $postData[$key]['attempts'] = $oldItem->getAttempts() + 1;
-                        if ($postData[$key]['attempts'] > 3) {
-                            $postData[$key]['status'] = 'Not Found';
-                            $postData[$key]['needs_update'] = 0;
-                        }
-                    }
-                }
             }
         }
 
         foreach ($postData as $key => $data) {
             if (!isset($data['status'])) {
-
                 if (isset($itemsResult['message'])) {
                     $data['call_result'] = $itemsResult['message'];
                 } else {
                     $data['call_result'] = 'Empty return data, please check webhook url or project settings.';
                 }
-
                 $data['status'] = 'Error';
                 $data['needs_update'] = 1;
                 $data['last_call'] = Mage::getModel('core/date')->gmtDate('Y-m-d H:i:s');
                 $data['updated_at'] = Mage::getModel('core/date')->gmtDate('Y-m-d H:i:s');
-                $data['attempts'] = 1;
-                if ($data['needs_update']) {
-                    $oldItem = $this->load($data['item_id']);
-                    if ($oldItem->getStatus() == 'Error') {
-                        $data['attempts'] = $oldItem->getAttempts() + 1;
-                        if ($data['attempts'] > 3) {
-                            $data['status'] = 'Not Found';
-                            $data['needs_update'] = 0;
-                        }
-                    }
-                }
             }
             try {
                 $this->setData($data)->save();

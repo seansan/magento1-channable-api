@@ -96,7 +96,7 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
             Mage::getSingleton('core/session')->setChannableEnabled(1);
             Mage::getSingleton('core/session')->setChannableShipping($shippingPriceCal);
 
-            $shippingMethod = $this->getShippingMethod($quote, $shippingAddress, $config);
+            $shippingMethod = $this->getShippingMethod($quote, $shippingAddress, $config, $lvb);
             $quote->getShippingAddress()
                 ->setShippingMethod($shippingMethod)
                 ->setPaymentMethod($config['payment_method'])
@@ -110,40 +110,17 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
             $service->submitAll();
             $quote->setIsActive(false)->save();
 
-            /** @var Mage_Sales_Model_Order $_order */
+            /** @var Mage_Sales_Model_Order $magentoOrder */
             if (!empty($config['channel_orderid'])) {
                 $newIncrement = $this->getUniqueIncrementId($order['channel_id'], $storeId);
-                $_order = $service->getOrder()
+                $magentoOrder = $service->getOrder()
                     ->setIncrementId($newIncrement)
                     ->save();
             } else {
-                $_order = $service->getOrder();
+                $magentoOrder = $service->getOrder();
             }
 
-            if (!empty($order['channel_name'])) {
-                if (!empty($order['price']['commission'])) {
-                    $commission = $order['price']['currency'] . ' ' . $order['price']['commission'];
-                } else {
-                    $commission = 'n/a';
-                }
-
-                $orderComment = Mage::helper('channableapi')->__(
-                    '<b>%s order</b><br/>Channable id: %s<br/>%s id: %s<br/>Commission: %s',
-                    ucfirst($order['channel_name']),
-                    $order['channable_id'],
-                    ucfirst($order['channel_name']),
-                    $order['channel_id'],
-                    $commission
-                );
-
-                $_order->addStatusHistoryComment($orderComment, false);
-                $_order->setChannableId($order['channable_id'])
-                    ->setChannelId($order['channel_id'])
-                    ->setChannelName($order['channel_name'])
-                    ->save();
-            } elseif (!empty($order['channable_id'])) {
-                $_order->setChannableId($order['channable_id'])->save();
-            }
+            $this->addPaymentData($magentoOrder, $order, $lvb);
 
             unset($quote);
             unset($customer);
@@ -154,17 +131,17 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
 
         if (!empty($config['invoice_order'])) {
             try {
-                $invoice = $_order->prepareInvoice();
+                $invoice = $magentoOrder->prepareInvoice();
                 $invoice->register();
 
                 Mage::getModel('core/resource_transaction')->addObject($invoice)->addObject($invoice->getOrder())->save();
-                $_order->setState(Mage_Sales_Model_Order::STATE_PROCESSING, true);
+                $magentoOrder->setState(Mage_Sales_Model_Order::STATE_PROCESSING, true);
 
                 if ($status = Mage::helper('channableapi')->getProcessingStatus($storeId)) {
-                    $_order->setStatus($status);
+                    $magentoOrder->setStatus($status);
                 }
 
-                $_order->save();
+                $magentoOrder->save();
             } catch (Exception $e) {
                 $this->addToLog('importOrder', $e->getMessage(), 2);
             }
@@ -172,11 +149,11 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
 
         if ($lvb && !empty($config['lvb_ship'])) {
             try {
-                $shipment = $_order->prepareShipment();
+                $shipment = $magentoOrder->prepareShipment();
                 $shipment->register();
 
-                $_order->setIsInProcess(true);
-                $_order->addStatusHistoryComment('LVB Order, Automaticly Shipped', false);
+                $magentoOrder->setIsInProcess(true);
+                $magentoOrder->addStatusHistoryComment('LVB Order, Automaticly Shipped', false);
 
                 Mage::getModel('core/resource_transaction')
                     ->addObject($shipment)
@@ -189,9 +166,9 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
 
         if (!empty($config['order_email'])) {
             try {
-                $_order->getSendConfirmation(null);
-                $_order->sendNewOrderEmail();
-                $_order->save();
+                $magentoOrder->getSendConfirmation(null);
+                $magentoOrder->sendNewOrderEmail();
+                $magentoOrder->save();
             } catch (Exception $e) {
                 $this->addToLog('importOrder', $e->getMessage(), 2);
             }
@@ -201,7 +178,7 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
         Mage::getSingleton('core/session')->unsChannableEnabled();
         Mage::getSingleton('core/session')->unsChannableShipping();
 
-        return $this->jsonRepsonse('', $_order->getIncrementId());
+        return $this->jsonRepsonse('', $magentoOrder->getIncrementId());
     }
 
     /**
@@ -230,7 +207,8 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
         $config['customers_group'] = Mage::getStoreConfig('channable_api/order/customers_group', $storeId);
         $config['channel_orderid'] = Mage::getStoreConfig('channable_api/order/channel_orderid', $storeId);
         $config['lvb_stock'] = Mage::getStoreConfig('channable_api/advanced/lvb_stock', $storeId);
-        $config['lvb_ship'] = Mage::getStoreConfig('channable_api/advanced/lvb_stock', $storeId);
+        $config['lvb_ship'] = Mage::getStoreConfig('channable_api/advanced/lvb_ship', $storeId);
+        $config['lvb_shipping_method'] = Mage::getStoreConfig('channable_api/advanced/lvb_shipping_method', $storeId);
         return $config;
     }
 
@@ -489,16 +467,21 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
      * @param Mage_Sales_Model_Quote $quote
      * @param                        $shippingAddress
      * @param                        $config
+     * @param                        $lvb
      *
      * @return string
      */
-    public function getShippingMethod($quote, $shippingAddress, $config)
+    public function getShippingMethod($quote, $shippingAddress, $config, $lvb)
     {
         $store = Mage::getModel('core/store')->load($config['store_id']);
         $shippingMethod = $config['shipping_method'];
         $shippingMethodFallback = $config['shipping_method_fallback'];
         if (!$shippingMethodFallback) {
             $shippingMethodFallback = 'flatrate_flatrate';
+        }
+
+        if ($lvb && $config['lvb_shipping_method']) {
+            $shippingMethod = $config['lvb_shipping_method'];
         }
 
         /** @var Mage_Shipping_Model_Rate_Request $request */
@@ -595,6 +578,53 @@ class Magmodules_Channableapi_Model_Order extends Mage_Core_Model_Abstract
         }
 
         return $newIncrementId;
+    }
+
+    /**
+     * @param Mage_Sales_Model_Order                     $magentoOrder
+     * @param                                            $order
+     * @param                                            $lvb
+     *
+     * @throws Mage_Core_Exception
+     */
+    public function addPaymentData($magentoOrder, $order, $lvb)
+    {
+        $payment = $magentoOrder->getPayment();
+        if (isset($order['channable_id']) && !empty($order['channable_id'])) {
+            $payment->setAdditionalInformation('channable_id', $order['channable_id']);
+            $magentoOrder->setChannableId($order['channable_id']);
+        }
+
+        if (isset($order['channel_id']) && !empty($order['channel_id'])) {
+            $payment->setAdditionalInformation('channel_id', ucfirst($order['channel_id']));
+            $magentoOrder->setChannelId($order['channel_id']);
+        }
+
+        if (isset($order['price']['commission']) && !empty($order['price']['commission'])) {
+            $commission = $order['price']['currency'] . ' ' . $order['price']['commission'];
+            $payment->setAdditionalInformation('commission', $commission);
+        }
+
+        if (isset($order['channel_name']) && !empty($order['channel_name'])) {
+            if ($lvb) {
+                $payment->setAdditionalInformation('channel_name', ucfirst($order['channel_name']) . ' LVB');
+            } else {
+                $payment->setAdditionalInformation('channel_name', ucfirst($order['channel_name']));
+            }
+            $magentoOrder->setChannelName($order['channel_name']);
+        }
+
+        $magentoOrder->save();
+
+        $itemRows = array();
+        foreach ($order['products'] as $product) {
+            $itemRows[] = array(
+                'title'           => $product['title'],
+                'ean'             => $product['ean'],
+                'delivery_period' => $product['delivery_period']
+            );
+        }
+        $payment->setAdditionalInformation('delivery', $itemRows);
     }
 
     /**

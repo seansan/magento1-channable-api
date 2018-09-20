@@ -1,0 +1,77 @@
+<?php
+/**
+ * Magmodules.eu - http://www.magmodules.eu
+ *
+ * NOTICE OF LICENSE
+ * This source file is subject to the Open Software License (OSL 3.0)
+ * that is bundled with this package in the file LICENSE.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://opensource.org/licenses/osl-3.0.php
+ * If you did not receive a copy of the license and are unable to
+ * obtain it through the world-wide-web, please send an email
+ * to info@magmodules.eu so we can send you a copy immediately.
+ *
+ * @category      Magmodules
+ * @package       Magmodules_Channableapi
+ * @author        Magmodules <info@magmodules.eu>
+ * @copyright     Copyright (c) 2018 (http://www.magmodules.eu)
+ * @license       http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+ */
+?>
+<?php
+/**
+ * @see Magmodules_Channableapi_Block_Payment_Info
+ */
+?>
+<?php echo $this->escapeHtml($this->getMethod()->getTitle()) ?>
+<table class="channable-extra-info-table">
+    <?php if ($channelName = $this->getInfo()->getAdditionalInformation('channel_name')): ?>
+        <tr>
+            <td><?= __('Channel Name'); ?></td>
+            <td><?= $channelName; ?></td>
+        </tr>
+    <?php endif; ?>
+    <?php if ($channelId = $this->getInfo()->getAdditionalInformation('channel_id')): ?>
+        <tr>
+            <td><?= __('Channel ID'); ?></td>
+            <td><?= $channelId; ?></td>
+        </tr>
+    <?php endif; ?>
+    <?php if ($channableId = $this->getInfo()->getAdditionalInformation('channable_id')): ?>
+        <tr>
+            <td><?= __('Channable ID'); ?></td>
+            <td><?= $channableId; ?></td>
+        </tr>
+    <?php endif; ?>
+    <?php if ($commission = $this->getInfo()->getAdditionalInformation('commission')): ?>
+        <tr>
+            <td><?= __('Commission'); ?></td>
+            <td><?= $commission; ?></td>
+        </tr>
+    <?php endif; ?>
+
+    <?php if ($delivery = $this->getInfo()->getAdditionalInformation('delivery')): ?>
+        <tr>
+            <td><?= __('Delivery'); ?></td>
+            <td>
+                <a href="#" class="chanable-tooltip"><?= __('Show Delivery Periods'); ?>
+                    <span>
+						<table class="channable-delivery-info-table">
+							<?php foreach ($delivery as $item): ?>
+                                <tr>
+									<td><?= $item['title']; ?></td>
+									<td><?= $item['ean']; ?></td>
+									<td><?= $item['delivery_period']; ?></td>
+								</tr>
+                            <?php endforeach; ?>
+						</table>
+					</span>
+                </a>
+            </td>
+        </tr>
+    <?php endif; ?>
+</table>
+
+<?php echo $this->getChildHtml() ?>
+
+

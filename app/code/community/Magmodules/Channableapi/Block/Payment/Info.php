@@ -18,21 +18,21 @@
  * @license       http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-class Magmodules_Channableapi_Model_Payment_Channable extends Mage_Payment_Model_Method_Abstract
+class Magmodules_Channableapi_Block_Payment_Info extends Mage_Payment_Block_Info
 {
 
-    protected $_code = 'channable';
-    protected $_infoBlockType = 'channableapi/payment_info';
-    protected $_canUseInternal = true;
-    protected $_canUseCheckout = false;
-    protected $_canUseForMultishipping = false;
+    /**
+     * @var Magmodules_Channableapi_Helper_Data
+     */
+    public $helper;
 
     /**
-     * Magmodules_Channableapi_Model_Payment_Channable constructor.
+     * @inheritdoc
      */
-    public function __construct()
+    public function _construct()
     {
-        parent::__construct();
+        parent::_construct();
+        $this->setTemplate('magmodules/channableapi/payment/info.phtml');
+        $this->helper = Mage::helper('channableapi');
     }
-
 }

@@ -80,3 +80,61 @@ a.chanable-tooltip:hover span {
     width: auto;
     margin-right: 20px;
 }
+
+.channable-extra-info-table {
+    margin: 15px;
+    width: 400px;
+}
+
+.channable-extra-info-table td {
+    padding: 10px;
+}
+
+.channable-extra-info-table tr {
+    border: 1px solid #D6D6D6;
+    display: flow-root;
+}
+
+.channable-extra-info-table tr:nth-child(even) {
+    background-color: #F2F2F2;
+}
+
+.channable-extra-info-table td:first-child {
+    font-weight: bold;
+    width: 100px;
+}
+
+.channable-delivery-info-table {
+    margin: 5px;
+    width: 500px;
+}
+
+.channable-delivery-info-table td {
+    padding: 10px;
+    width: 150px;
+    font-weight: normal;
+}
+
+.channable-delivery-info-table tr {
+    background: #FAFAFA;
+    border: 0px;
+    margin: 2px;
+}
+
+.channable-delivery-info-table tr:nth-child(even) {
+    background-color: #F2F2F2;
+}
+
+.channable-delivery-info-table td:first-child {
+    font-weight: bold;
+    width: 200px;
+}
+
+.channable-delivery-info a {
+    font: bold 12px arial, helvetica, sans-serif;
+    cursor: pointer;
+    white-space: nowrap;
+    display: block;
+    color: #EA7601;
+    margin-bottom: 10px;
+}

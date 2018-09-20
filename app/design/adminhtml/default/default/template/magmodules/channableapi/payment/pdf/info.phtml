@@ -17,22 +17,18 @@
  * @copyright     Copyright (c) 2018 (http://www.magmodules.eu)
  * @license       http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
+?>
+<?php
+/**
+ * @see Magmodules_Channableapi_Block_Payment_Info
+ */
+?>
+<?php echo $this->escapeHtml($this->getMethod()->getTitle()) ?>{{pdf_row_separator}}
 
-class Magmodules_Channableapi_Model_Payment_Channable extends Mage_Payment_Model_Method_Abstract
-{
+<?php if ($_specificInfo = $this->getSpecificInformation()):?>
+    <?php foreach ($_specificInfo as $_label => $_value):?>
+        <?php echo $_label ?>: <?php echo implode($this->getValueAsArray($_value), ' ')?>{{pdf_row_separator}}
+    <?php endforeach; ?>
+<?php endif;?>
 
-    protected $_code = 'channable';
-    protected $_infoBlockType = 'channableapi/payment_info';
-    protected $_canUseInternal = true;
-    protected $_canUseCheckout = false;
-    protected $_canUseForMultishipping = false;
-
-    /**
-     * Magmodules_Channableapi_Model_Payment_Channable constructor.
-     */
-    public function __construct()
-    {
-        parent::__construct();
-    }
-
-}
+<?php echo implode($this->getChildPdfAsArray(), '{{pdf_row_separator}}') ?>

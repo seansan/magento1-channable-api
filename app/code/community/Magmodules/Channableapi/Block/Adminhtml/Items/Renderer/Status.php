@@ -16,8 +16,6 @@
  * @author        Magmodules <info@magmodules.eu>
  * @copyright     Copyright (c) 2018 (http://www.magmodules.eu)
  * @license       http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
- *
- *
  */
 
 class Magmodules_Channableapi_Block_Adminhtml_Items_Renderer_Status
@@ -33,27 +31,16 @@ class Magmodules_Channableapi_Block_Adminhtml_Items_Renderer_Status
     {
         $status = $row->getData('status');
         $callResult = $row->getData('call_result');
-        $attempts = $row->getData('attempts');
-
-        $html = $status;
-        $message = '';
-
-        if ($status == 'Not Found' && $attempts > 1) {
-            $message .= __('Removed item from que after %1 attempts.', $attempts) . '<br/>';
-        }
 
         if (!empty($callResult)) {
-            $message .= '<i>API: "' . $callResult . '"</i><br/>';
-            if ($attempts > 1) {
-                $message .= __('Attempts: %s', $attempts);
-            }
+            return sprintf(
+                '%s <a href="#" class="chanable-tooltip" >(?)<span><i>API: "%s"</i><br/></span></a>',
+                $status,
+                $callResult
+            );
+        } else {
+            return $status;
         }
-
-        if (!empty($message)) {
-            $html .= ' <a href="#" class="chanable-tooltip" >(?)<span>' . $message . '</span></a>';
-        }
-
-        return $html;
     }
 
 }
