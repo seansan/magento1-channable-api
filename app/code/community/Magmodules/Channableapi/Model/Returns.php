@@ -70,6 +70,9 @@ class Magmodules_Channableapi_Model_Returns extends Mage_Core_Model_Abstract
         if ($order->getId() > 0) {
             $data['magento_order_id'] = $order->getId();
             $data['magento_increment_id'] = $order->getIncrementId();
+            $historycomment = '(' . $data['channel_name'] . ') Returned reported. Reason: ' . $data['reason'] . ', items ' . $data['item'];
+            $order->addStatusHistoryComment($historycomment)->setIsVisibleOnFront(true)->setIsCustomerNotified(false);
+            // $order->save(); save not necessary not sure?         
         }
 
         /** @var Magmodules_Channableapi_Model_Returns $retun */
